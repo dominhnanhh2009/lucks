@@ -29,7 +29,7 @@ private:
     std::vector<GameEvent> recent_events_;
 
     void act(Player& player);
-    void collect_item(Player& player);
+    [[nodiscard]] bool collect_item(Player& player);
     void finish_player(Player& player);
     void finish_game();
     void emit(EventKind kind, const Player& player, std::string message);

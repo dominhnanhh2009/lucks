@@ -226,10 +226,10 @@ Position Simulation::choose_destination(const Player& player) {
     return legal.at(choice(random_));
 }
 
-void Simulation::collect_item(Player& player) {
+bool Simulation::collect_item(Player& player) {
     Cell& cell = state_.cell(player.position);
     if (!cell.item) {
-        return;
+        return false;
     }
 
     const Item item = *cell.item;
@@ -237,7 +237,7 @@ void Simulation::collect_item(Player& player) {
         ? player.emeralds == 0.0 && item.amount != 0.0
         : player.greedy_level == 0;
     if (needs_new_slot && player.used_inventory_slots() >= player.inventory_capacity) {
-        return;
+        return false;
     }
 
     std::ostringstream message;
@@ -249,7 +249,7 @@ void Simulation::collect_item(Player& player) {
         message << player.name << " collected " << item.amount << " emerald";
     } else {
         if (item.level <= player.greedy_level) {
-            return;
+            return false;
         }
         player.greedy_level = item.level;
         message << player.name << " upgraded greedy to " << item.level;
@@ -258,6 +258,7 @@ void Simulation::collect_item(Player& player) {
     cell.item.reset();
     ++player.items_collected;
     emit(EventKind::collected, player, message.str());
+    return true;
 }
 
 void Simulation::finish_player(Player& player) {
@@ -279,8 +280,9 @@ void Simulation::act(Player& player) {
         return;
     }
     if (state_.cell(player.position).item) {
-        collect_item(player);
-        return;
+        if (collect_item(player)) {
+            return;
+        }
     }
 
     const Position destination = choose_destination(player);

@@ -35,6 +35,32 @@ std::vector<int> first_turn_order(lucks::TurnOrderMode mode) {
     return order;
 }
 
+void assert_player_can_pass_unusable_item() {
+    lucks::GameState state;
+    state.config.width = 3;
+    state.config.height = 3;
+    state.config.max_turns = 1;
+    state.cells.resize(9);
+    state.goal = {2, 2};
+    state.cell(state.goal).tile = lucks::Tile::goal;
+    state.cell({1, 1}).item = lucks::Item{lucks::ItemKind::greedy, 0.0, 2};
+
+    lucks::Player player;
+    player.id = 0;
+    player.name = "Greedy ten";
+    player.position = {1, 1};
+    player.greedy_level = 10;
+    state.players.push_back(player);
+
+    lucks::Simulation simulation(std::move(state));
+    simulation.step_turn();
+
+    const lucks::Position item_position{1, 1};
+    assert(simulation.state().players.front().position != item_position);
+    assert(simulation.state().cell({1, 1}).item.has_value());
+    assert(simulation.state().players.front().greedy_level == 10);
+}
+
 }  // namespace
 
 int main() {
@@ -77,6 +103,7 @@ int main() {
     assert(neutral.size() == 3 && probabilistic.size() == 3);
     assert(std::set<int>(neutral.begin(), neutral.end()).size() == 3);
     assert(std::set<int>(probabilistic.begin(), probabilistic.end()).size() == 3);
+    assert_player_can_pass_unusable_item();
 
     std::cout << "core invariants passed\n";
     return 0;
