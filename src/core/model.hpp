@@ -25,6 +25,24 @@ enum class ItemKind : std::uint8_t {
     greedy,
 };
 
+enum class TurnOrderMode : std::uint8_t {
+    neutral,
+    probabilistic_advantage,
+    deterministic_privilege,
+};
+
+[[nodiscard]] inline const char* turn_order_mode_name(TurnOrderMode mode) {
+    switch (mode) {
+    case TurnOrderMode::neutral:
+        return "neutral";
+    case TurnOrderMode::probabilistic_advantage:
+        return "probabilistic_advantage";
+    case TurnOrderMode::deterministic_privilege:
+        return "deterministic_privilege";
+    }
+    return "unknown";
+}
+
 struct Item {
     ItemKind kind{ItemKind::emerald};
     double amount{};
@@ -71,6 +89,7 @@ struct GameConfig {
     int greedy_count{14};
     int max_turns{700};
     std::uint64_t seed{20260719};
+    TurnOrderMode turn_order_mode{TurnOrderMode::deterministic_privilege};
 };
 
 struct GameState {

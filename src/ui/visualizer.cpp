@@ -45,6 +45,15 @@ constexpr Color greedy_color{246, 184, 73, 255};
 constexpr Color text_primary{230, 235, 243, 255};
 constexpr Color text_muted{139, 151, 170, 255};
 
+const char* turn_order_label(TurnOrderMode mode) {
+    switch (mode) {
+    case TurnOrderMode::neutral: return "neutral order";
+    case TurnOrderMode::probabilistic_advantage: return "wealth-weighted order";
+    case TurnOrderMode::deterministic_privilege: return "wealth-first order";
+    }
+    return "unknown order";
+}
+
 constexpr std::array<Color, 12> player_colors{{
     {111, 177, 255, 255}, {255, 117, 133, 255}, {184, 126, 255, 255},
     {255, 158, 86, 255}, {76, 210, 204, 255}, {245, 111, 203, 255},
@@ -195,7 +204,7 @@ void draw_player_table(const GameState& state) {
     });
 
     DrawText("PLAYERS", 24, 204, 13, text_muted);
-    DrawText("wealth order drives each turn", 24, 223, 12, Color{102, 115, 135, 255});
+    DrawText(turn_order_label(state.config.turn_order_mode), 24, 223, 12, Color{102, 115, 135, 255});
     int y = 250;
     for (const Player* player : players) {
         const Color color = player_colors.at(

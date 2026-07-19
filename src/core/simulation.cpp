@@ -44,13 +44,45 @@ void Simulation::emit(EventKind kind, const Player& player, std::string message)
     }
 }
 
-std::vector<int> Simulation::ordered_active_player_ids() const {
+std::vector<int> Simulation::ordered_active_player_ids() {
     std::vector<int> ids;
     for (const Player& player : state_.players) {
         if (player.active) {
             ids.push_back(player.id);
         }
     }
+    if (state_.config.turn_order_mode == TurnOrderMode::neutral) {
+        std::shuffle(ids.begin(), ids.end(), random_);
+        return ids;
+    }
+
+    if (state_.config.turn_order_mode == TurnOrderMode::probabilistic_advantage) {
+        // Draw a complete order without replacement. A player's weight is always
+        // positive, while each additional emerald increases its chance of an early turn.
+        std::vector<int> order;
+        order.reserve(ids.size());
+        while (!ids.empty()) {
+            double total_weight = 0.0;
+            for (int id : ids) {
+                total_weight += std::max(0.0, state_.players.at(static_cast<std::size_t>(id)).emeralds) + 1.0;
+            }
+            std::uniform_real_distribution<double> draw(0.0, total_weight);
+            double threshold = draw(random_);
+            std::size_t selected = ids.size() - 1;
+            for (std::size_t i = 0; i < ids.size(); ++i) {
+                threshold -= std::max(0.0,
+                    state_.players.at(static_cast<std::size_t>(ids[i])).emeralds) + 1.0;
+                if (threshold <= 0.0) {
+                    selected = i;
+                    break;
+                }
+            }
+            order.push_back(ids[selected]);
+            ids.erase(ids.begin() + static_cast<std::ptrdiff_t>(selected));
+        }
+        return order;
+    }
+
     std::stable_sort(ids.begin(), ids.end(), [&](int left, int right) {
         const Player& a = state_.players.at(static_cast<std::size_t>(left));
         const Player& b = state_.players.at(static_cast<std::size_t>(right));

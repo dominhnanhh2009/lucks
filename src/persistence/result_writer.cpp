@@ -39,6 +39,7 @@ void write_result_json(const GameState& state, const std::filesystem::path& path
         {"simulation", {
             {"profile", "stack"},
             {"seed", state.config.seed},
+            {"turn_order_mode", turn_order_mode_name(state.config.turn_order_mode)},
             {"turns_played", state.turn},
             {"max_turns", state.config.max_turns},
             {"completed", state.finished},

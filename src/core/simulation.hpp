@@ -37,7 +37,7 @@ private:
     [[nodiscard]] std::vector<Position> legal_neighbors(Position from) const;
     [[nodiscard]] Position choose_destination(const Player& player);
     [[nodiscard]] std::optional<Position> choose_greedy_target(const Player& player) const;
-    [[nodiscard]] std::vector<int> ordered_active_player_ids() const;
+    [[nodiscard]] std::vector<int> ordered_active_player_ids();
 };
 
 }  // namespace lucks
