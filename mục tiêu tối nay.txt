@@ -1,0 +1,8 @@
+Chạy executable
+→ sinh một map stack
+→ các player tự hành động
+→ player giàu được đi trước
+→ greedy ảnh hưởng đường đi
+→ có người đến goal
+→ UI theo dõi được
+→ kết quả cuối được lưu JSON

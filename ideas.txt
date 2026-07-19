@@ -1,0 +1,72 @@
+1 sandbox mô phỏng tên là "lucks", mô phỏng nhằm nghiên cứu sự phụ thuộc mạnh của kết quả vào điều kiện ban đầu của 1 player
+công nghệ sử dụng:
+ - c++20 (qua toolchain của msys2 ucrt64)
+ - raylib + raygui.h
+ - 1 thư viện json nào đó (nlohmann-json trong pacman)
+
+có các thành phần: game core, visualizer
+ - game core lo đọc giá trị khởi tạo + perform logic game + save game states json, đồng thời expose 1 vài hướng để truyền dữ liệu game stream ra ngoài
+ - visualizer chỉ là 1 màn hình xem bình thường, đơn giản. nhưng nên interactive + UX ngon
+(thông thường, khi chạy executable thì game sẽ tự start game core và visualizer và connect chúng. có thể có flag option để ko cần bật visualizer hoặc [gợi ý, ko bắt buộc] flag/mode/macro để in trạng thái frame để debug)
+
+nội dung game:
+ - (nhằm mục đích dễ triển khai, bản hiện tại là grid-based (mảng 2d/tọa độ nguyên) thay vì position-based (tọa độ thực) )
+ - có các "đối tượng" cùng chung 1 map (2d), gồm players, các vật phẩm
+ - có 1 số ô là wall và player ko thể bước vào (mục đích chính là biến map2d thành maze)
+ - mục tiêu của các player trong game: chạm vào 1 đối tượng "đích cuối cùng". khi chạm vào thì player được đưa ra khỏi map, ranking ghi nhận người đó về thứ mấy với khối tài sản như thế nào (inventory)
+
+về 1 đối tượng player:
+ - có 1 inventory với M_MAX_ITEMS_IN_INVENTORY slot để chứa các vật phẩm ("M_" ko phải macro của mọi player, nó là macro cục bộ của player và ko thể thay đổi sau khi đã spawn)
+ - các player ở mỗi lần đến lượt sẽ đưa ra M_MAX_ACTIONS_PER_TURN move tuần tự. điều này làm cho tốc độ hành động là chênh lệch giữa các player
+ - ko gian moves (từ inventory và vị trí của người đó để gen ra các move khả dĩ):
+  + ko làm gì cả
+  + di chuyển đến các ô kề cạnh ko phải wall
+  + pick hoặc throw 1 item khỏi inventory
+  + mua món nào đó
+ - hàm lựa chọn:
+  + nhận vào ko gian moves, và inventory
+  + đưa ra hành động dựa trên các thông tin đó
+  + base case: nếu ko có inventory nào ảnh hưởng strangy thì strangy là random uniform trên moveables
+  + tham khảo định nghĩa của các vật phẩm
+
+về các đối tượng vật phẩm:
+ - là trang bị cho player, cũng định nghĩa luôn cả cách player đưa ra hành động
+ - các vật phẩm có thể tác động vào 2 sức mạnh chính là "tài sản hữu hình" hoặc "kiến thức" hoặc cả 2 (trừu tượng khi giải thích, trong game ko có cái biến nào để ghi đây là loại nào)
+ - các vật phẩm sẽ biến mất khỏi map sau khi có bất kỳ player nào thu thập được, chúng chỉ còn tồn tại trong inventory
+
+các loại vật phẩm và tác động của chúng vào hàm/ko gian lựa chọn:
+  - greedy 1: action sẽ đưa ra đường đi ngắn nhất để di chuyển đến 1 ô ngon nhất trong 4 ô kề cạnh (sort đích -> vật phẩm. nếu nhiều vật phẩm thì chọn cái có level cao nhất bất kể có cùng loại vật phẩm hay ko). nếu kc=0 thì nhặt vật phẩm
+    + greedy 2: giống 1 nhưng khoảng cách mahathan là 2
+    + ...
+    + greedy n với 0<= n <= 10
+    + để có greedy thì player có thể nhặt được hoặc mua với giá 2^n emerald (giá 2n^2 + 2n + 1 đã bị deprecated)
+    + ko bị break theo thời gian
+    + greedy upgrade là override thẳng. nghĩa là nâng từ greedy1 thành greedy3 sẽ ko throw tài nguyên nào ra môi trường mà nói cách khác greedy1 sẽ biến mất vĩnh viễn
+  - investment chance X:
+   + ban đầu có confident là X và M_WINDOW_OF_EXPECTATION (thời gian dự kiến thu lời sau đầu tư, ví dụ đầu tư ở mốc t thì kỳ vọng nhận lại ở mốc t+M_WINDOW_OF_EXPECTATION )
+   + ảnh hưởng đến hàm lựa chọn: player sẽ có xu hướng đầu tư hơn. mỗi khi đến hạn thu lời thì ta sẽ tính confident += tiền lúc này - tiền lúc đầu tư (ko xét các item khác)
+   + break khi confident về âm
+   + 1 player chỉ có thể có 1 chance tại 1 thời điểm, nếu đang có thì ko thể thêm bằng bất kỳ hính thức nào
+   + investment chance được rao bán với giá 10 emerald
+  - emerald X (X là số thực):
+    + tăng X emerald vào inventory, tiền sẽ chỉ chiếm 1 slot trong inventory nên -23, 10 hay 100 chỉ chiếm 1 slot và 0 coin thì là 0 slot.
+    + ko ảnh hưởng đến hàm lựa chọn
+    + ảnh hưởng đến ko gian lựa chọn: player có thể chọn mua các món mua được với số dư hiện tại
+    + ko bị break theo thời gian
+    + [update] lượng càng nhiều emerald quyết định player nào được set turn trước!!
+  - infomation asymmetry N (thêm vào đây cho có thôi chứ chưa định nghĩa rõ nên bản đầu chưa cho vào game)
+
+việc khởi tạo map (nên có riêng hàm/file khởi tạo map có thể thay thế dễ dàng profile map generator):
+  - khi được spawn mới ra, 1 player có thể có sẵn 1 vài vật phẩm trong inventory, 1 vị trí bất kỳ và 1 M_MAX_ITEMS_IN_INVENTORY riêng biệt
+  - các vật phẩm có thể nằm rải rác trong map, đảm bảo 1 vị trí ko có 2 object cùng nằm
+  - có MAX_TURN là giới hạn turn. khi này chỉ có những player đx đến đích là được ranked, những plyer khác là "eliminated".
+
+profile sample:
+ - "no wall": ko tường, các emerald/greedy có X là normal random với kỳ vọng và độ lệch chuẩn hợp lý cho mỗi loại vật phẩm (nghĩa là có thể có nợ đấy), và vị trí của emerald và greedy là uniform. vị trí "đích"/player là uniform. inventory của các player là normal hợp lý
+ - "bottle neck wall": tương tự "no wall" nhưng có thêm tường. tường chia world thành 2 bên và chỉ bỏ lại 1 lỗ nhỏ trên tường để các player ở 2 bên có thể đi qua bên còn lại
+ - "stack": giống "bottle neck wall" nhưng có nhiều tầng/lớp hơn, đích ở 1 biên của stack và đa số player phân bổ ở đầu đáy còn lại.
+
+dư liệu hữu ích có thể làm thành chart để vẽ trong simulator/lưu dữ liệu:
+ - giá trị tài sản của mỗi player
+ - khoảng cách đến đích của mỗi player (ước tính)
+ - ... (thấy gì hay thì ghi thêm vào đây)
