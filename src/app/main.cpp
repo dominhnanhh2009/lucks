@@ -20,11 +20,12 @@ struct Options {
 
 void print_usage() {
     std::cout
-        << "Usage: lucks [--headless] [--seed N] [--turn-order MODE] [--max-turns N] [--output PATH]\n"
+        << "Usage: lucks [--headless] [--seed N] [--turn-order MODE] [--max-turns N] [--players N] [--output PATH]\n"
         << "  --headless     run without opening the visualizer\n"
         << "  --seed N       choose a reproducible initial condition\n"
         << "  --turn-order MODE  neutral, probabilistic, or deterministic (default)\n"
         << "  --max-turns N  override the simulation turn limit\n"
+        << "  --players N    set the number of players\n"
         << "  --output PATH  choose the final JSON result path\n";
 }
 
@@ -65,6 +66,11 @@ Options parse_options(int argc, char** argv) {
                 || options.config.max_turns < 1) {
                 throw std::invalid_argument("invalid --max-turns value");
             }
+        } else if (argument == "--players" && i + 1 < argc) {
+            if (!parse_number(std::string_view(argv[++i]), options.config.player_count)
+                || options.config.player_count < 1) {
+                throw std::invalid_argument("invalid --players value");
+            }
         } else if (argument == "--turn-order" && i + 1 < argc) {
             if (!parse_turn_order_mode(argv[++i], options.config.turn_order_mode)) {
                 throw std::invalid_argument("invalid --turn-order value (use neutral, probabilistic, or deterministic)");
@@ -104,3 +110,4 @@ int main(int argc, char** argv) {
         return 1;
     }
 }
+

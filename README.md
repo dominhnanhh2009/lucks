@@ -44,6 +44,7 @@ The completed run is saved to `results/latest.json`.
 ```powershell
 .\build\bin\lucks.exe --headless --seed 42
 .\build\bin\lucks.exe --headless --seed 42 --max-turns 1000 --output results/seed-42.json
+.\build\bin\lucks.exe --headless --seed 42 --players 20
 .\build\bin\lucks.exe --headless --seed 42 --turn-order probabilistic --output results/probabilistic-42.json
 ctest --test-dir build --output-on-failure
 ```
